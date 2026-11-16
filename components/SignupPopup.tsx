@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 type Props = {
@@ -20,13 +20,38 @@ export default function SignupPopup({ open, onClose }: Props) {
 
   const [values, setValues] = useState({ name: "", email: "", age: "" });
   const [errors, setErrors] = useState<Errors>({});
-  const [success, setSuccess] = useState(false);
+
+  const handleClose = useCallback(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+    gsap.to(modal, {
+      opacity: 0,
+      y: 30,
+      scale: 0.96,
+      duration: 0.3,
+      ease: "power2.in",
+      onComplete: () => {
+        onClose();
+        gsap.set(modal, { clearProps: "all" });
+        setTimeout(() => {
+          setValues({ name: "", email: "", age: "" });
+          setErrors({});
+          if (formViewRef.current) {
+            formViewRef.current.style.display = "block";
+            formViewRef.current.style.opacity = "1";
+          }
+          if (successViewRef.current) {
+            successViewRef.current.style.display = "none";
+          }
+        }, 50);
+      },
+    });
+  }, [onClose]);
 
   useEffect(() => {
     if (open && !prevOpen.current) {
-      const overlay = overlayRef.current;
       const modal = modalRef.current;
-      if (overlay && modal) {
+      if (modal) {
         gsap.fromTo(
           modal,
           { opacity: 0, y: 40, scale: 0.96 },
@@ -45,37 +70,7 @@ export default function SignupPopup({ open, onClose }: Props) {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const handleClose = () => {
-    const modal = modalRef.current;
-    if (!modal) return;
-    gsap.to(modal, {
-      opacity: 0,
-      y: 30,
-      scale: 0.96,
-      duration: 0.3,
-      ease: "power2.in",
-      onComplete: () => {
-        onClose();
-        gsap.set(modal, { clearProps: "all" });
-        setTimeout(() => {
-          setSuccess(false);
-          setValues({ name: "", email: "", age: "" });
-          setErrors({});
-          if (formViewRef.current) {
-            formViewRef.current.style.display = "block";
-            formViewRef.current.style.opacity = "1";
-          }
-          if (successViewRef.current) {
-            successViewRef.current.style.display = "none";
-          }
-        }, 50);
-      },
-    });
-  };
-
+  }, [open, handleClose]);
   const validate = () => {
     const next: Errors = {};
     const name = values.name.trim();
@@ -125,7 +120,6 @@ export default function SignupPopup({ open, onClose }: Props) {
             successViewRef.current.style.display = "block";
             gsap.fromTo(successViewRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6 });
           }
-          setSuccess(true);
         },
       });
     }
@@ -244,7 +238,7 @@ export default function SignupPopup({ open, onClose }: Props) {
 
         <div ref={successViewRef} className="py-5 text-center" style={{ display: "none" }}>
           <p className="eyebrow">Welcome</p>
-          <h2 className="mb-3.5 font-display text-[3.2rem] font-normal leading-[0.95]">You're In</h2>
+          <h2 className="mb-3.5 font-display text-[3.2rem] font-normal leading-[0.95]">You&apos;re In</h2>
           <p className="text-[0.9rem] text-grey">Check your inbox for your welcome points.</p>
         </div>
       </div>
